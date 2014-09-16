@@ -10,7 +10,13 @@ import string
 # for import of config
 import json
 
-config = json.load(open('config.json'))
+# for exiting from script prematurely
+import sys
+
+try:
+  config = json.load(open('config.json'))
+except IOError:
+  sys.exit('config.json file missing. run "python create-config.py" to create one.')
 
 textReplacements = dict([
   ('>', 'greater than'),
