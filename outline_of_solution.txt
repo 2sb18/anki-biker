@@ -1,0 +1,62 @@
+
+use a raspberry pi
+- can the program be command line?
+
+STEPS
+-----
+
+- raspberry pi has to run program on startup
+  - researching http://www.tldp.org/HOWTO/HighQuality-Apps-HOWTO/boot.html
+    - to make your software start automatically in the boot process, it
+      must be a subsystem.
+
+
+- there's a thing called anki sync server, which might be useful
+
+
+- to do text to speech, can use the program "festival" from the command line
+  - echo "Hello how are you?" | festival --tts
+  - or we could use the program espeak
+
+
+- biggest problem is getting deck from anki?
+  - researching the anki docs
+  - oh baby!
+    - libanki is the backend code. "can also be included in command line programs to access Anki decks without the GUI
+  - so follow the instructions at https://github.com/dae/anki/blob/master/README.development
+  - now you'll have development set up.
+  - run python
+    >>> import anki    (you have to be in the anki folder)
+    >>> collection = anki.Collection("collection.anki2")  (the collection has to be in the folder)
+    >>> card = collection.sched.getCard()
+    >>> card.q()   (includes a lot of html you have to scrub)
+
+    
+    
+- we can use a battery from adafruit to power raspberry pi.
+
+
+- user interface: music/anki/silence
+  
+anki stuff: next question. answer. repeat. 0. 1. 2. 3. 4. mark. volume up. volume down.
+music stuff: next song, previous song. volume up, volume down.
+
+
+okay, now, really, the steps
+----------------------------
+
+1. raspberry boots up. anki-biker starts up
+2. says "ready to rock!"
+3. user hits "music/anki"
+4. music comes on
+5. user hits "music/anki" again
+6. program uses python to get the next 
+9. use tts program to say question
+10. user thinks about answer
+11. user hits "answer"
+12. user hits a number for the answer.
+
+13. at some point we gotta sync
+
+
+
