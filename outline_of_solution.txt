@@ -2,6 +2,10 @@
 use a raspberry pi
 - can the program be command line?
 
+turning up and down volume
+--------------------------
+amixer cset numid=1 100%
+
 STEPS
 -----
 
