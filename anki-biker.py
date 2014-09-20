@@ -13,10 +13,18 @@ import json
 # for exiting from script prematurely
 import sys
 
+# for debugging
+import pdb
+
 try:
   config = json.load(open('config.json'))
 except IOError:
   sys.exit('config.json file missing. run "python create-config.py" to create one.')
+
+try:
+  subprocess.Popen( 'html2text', stdout=subprocess.PIPE, stdin=subprocess.PIPE)
+except OSError:
+  sys.exit("looks like you need to install html2text. run 'apt-get install html2text'")
 
 textReplacements = dict([
   ('>', 'greater than'),
@@ -51,13 +59,18 @@ currentCard = 0
 # that allows you to select a deck.
 # currentDeck
 
+# returns true if we could get a card, false if
+# not
 def getCard():
   global currentCard
   # if there's an "<img" then get another card
+  if collection.cardCount() == 0:
+    return False
   while ( 1 ):
     currentCard = collection.sched.getCard()
     if re.search('<img', currentCard.a()) == None:
       break
+  return True
 
 def tts(text):
   print "saying: " + text
@@ -91,18 +104,33 @@ def cleanCard(text):
   return text
   
 def sync():
-  tts("syncing")
+  # saying "sinking" cause it sounds better
+  tts("sinking")
   try:
     remoteServer = anki.sync.RemoteServer(None)
     # create the hostkey
-    remoteServer.hostKey(config['username'], config['password'])
+    hostkey = remoteServer.hostKey(config['username'], config['password'])
     syncer = anki.sync.Syncer(collection, remoteServer)
-    tts(syncer.sync())
+    syncResult = syncer.sync()
+    if syncResult == "fullSync":
+      tts("schemas differ. need to download. downloading...")
+      fullSyncer = anki.sync.FullSyncer(collection, hostkey, None)
+      fullSyncer.download()
+      tts("collection downloaded from remote server")
+    else:
+      tts(syncer.sync())
   except:
     tts(str(sys.exc_info()[0]))
 
 def getInput():
   return raw_input()
+
+def getCardAndAsk():
+  if getCard():
+    tts(cleanCard(currentCard.q()))
+  else:
+    tts("can't get another card")
+
 
 # try syncing on startup
 sync()
@@ -114,27 +142,33 @@ while(1):
     collection.sched.answerCard(currentCard,input)
     tts(str(input))
     # get new card and ask it
-    getCard()
-    tts(cleanCard(currentCard.q()))
+    getCardAndAsk()
   elif input == 5:
     # get new card and ask it
-    getCard()
-    tts(cleanCard(currentCard.q()))
+    getCardAndAsk()
   elif input == 6:
     # repeat question
-    tts(cleanCard(currentCard.q()))
+    if currentCard:
+      tts(cleanCard(currentCard.q()))
+    else:
+      tts("no question to repeat")
   elif input == 7:
     # repeat answer
-    tts(cleanCard(currentCard.a()))
+    if currentCard:
+      tts(cleanCard(currentCard.a()))
+    else:
+      tts("no answer to repeat")
   elif input == 8:
-    # mark and bury card
-    tts("mark and bury")
-    # mark
-    collection.markReview(currentCard)
-    # buryCards in sched.py 
-    collection.sched.buryNote(currentCard.nid)
-    getCard()
-    tts(cleanCard(currentCard.q()))
+    if currentCard:
+      # mark and bury card
+      tts("mark and bury")
+      # mark
+      collection.markReview(currentCard)
+      # buryCards in sched.py 
+      collection.sched.buryNote(currentCard.nid)
+      getCardAndAsk()
+    else:
+      tts("no card to bury")
   elif input == 9:
     #say menu
     tts("1 to 4: select ease.")
