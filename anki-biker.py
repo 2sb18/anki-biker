@@ -16,6 +16,9 @@ import sys
 # for debugging
 import pdb
 
+# for input to raspberry pi
+import pifacedigitalio
+
 try:
   config = json.load(open('config.json'))
 except IOError:
@@ -24,7 +27,7 @@ except IOError:
 try:
   subprocess.Popen( 'html2text', stdout=subprocess.PIPE, stdin=subprocess.PIPE)
 except OSError:
-  sys.exit("looks like you need to install html2text. run 'apt-get install html2text'")
+  sys.exit("looks like you need to install html2text. run 'sudo apt-get install html2text'")
 
 textReplacements = dict([
   ('>', 'greater than'),
@@ -48,12 +51,23 @@ if cmd_folder not in sys.path:
 import anki
 import anki.sync
 
+def print_input(event):
+  print(event.pin_num + 1)
+
+pifacedigital = pifacedigitalio.PiFaceDigital()
+listener = pifacedigitalio.InputEventListener(chip=pifacedigital)
+listener.register(0,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
+listener.activate()
+
 # the collection should be in the current directory
 collection = anki.Collection(config['collection_filename'])
 
 currentCard = 0
 
+currentVolume = 80
 
+# set the volume to 80 percent
+# proc = subprocess.Popen(
 
 # there's a method in decks called select
 # that allows you to select a deck.
@@ -111,6 +125,7 @@ def sync():
     # create the hostkey
     hostkey = remoteServer.hostKey(config['username'], config['password'])
     syncer = anki.sync.Syncer(collection, remoteServer)
+    # this is causing a problem
     syncResult = syncer.sync()
     if syncResult == "fullSync":
       tts("schemas differ. need to download. downloading...")
@@ -121,6 +136,7 @@ def sync():
       tts(syncer.sync())
   except:
     tts(str(sys.exc_info()[0]))
+  tts("There are {} cards in your collection".format(collection.cardCount()))
 
 def getInput():
   return raw_input()
@@ -134,6 +150,9 @@ def getCardAndAsk():
 
 # try syncing on startup
 sync()
+
+#get new card and ask it
+getCardAndAsk()
 
 while(1):
   input = int(getInput())
@@ -160,6 +179,7 @@ while(1):
       tts("no answer to repeat")
   elif input == 8:
     if currentCard:
+      # !!! at some point we just want to suspend
       # mark and bury card
       tts("mark and bury")
       # mark
@@ -170,14 +190,18 @@ while(1):
     else:
       tts("no card to bury")
   elif input == 9:
-    #say menu
-    tts("1 to 4: select ease.")
-    tts("5: get new card.")
-    tts("6: repeat question.")
-    tts("7: repeat answer.")
-    tts("8: mark and bury.")
-    tts("9: menu you dummy.")
-    tts("0: sync")
+    tts("special menu")
+    while(1):
+      input = int(getInput())
+      if input == 1:
+        pass
+      if input == 9:
+        tts("1 to 4: select ease.")
+        tts("5: get new card.")
+        tts("6: repeat question.")
+        tts("7: repeat answer.")
+        tts("8: mark and bury.")
+        tts("9: menu you dummy.")
+        tts("0: sync")
   elif input == 0:
     sync()
-  # elif input == 
