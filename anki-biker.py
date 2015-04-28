@@ -15,6 +15,7 @@ import sys
 
 # for debugging
 import pdb
+import traceback
 
 # for input to raspberry pi
 # if we aren't using the raspberry (ie we are developing or debugging), this
@@ -56,8 +57,7 @@ textReplacements = dict([
     (']', 'close square bracket')
     ])
 
-cmd_folder = os.path.realpath(os.path.abspath(os.path.join(
-    os.path.split(inspect.getfile(inspect.currentframe() ))[0], "anki")))
+cmd_folder = "/usr/share/anki"
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
@@ -65,7 +65,7 @@ import anki
 import anki.sync
 
 # the collection should be in the current directory
-collection = anki.Collection(config['collection_filename'])
+collection = anki.Collection(config['collection_filename'], log=True)
 
 currentCard = 0
 
@@ -133,6 +133,8 @@ def sync():
         remoteServer = anki.sync.RemoteServer(None)
         # create the hostkey
         hostkey = remoteServer.hostKey(config['username'], config['password'])
+        if not hostkey:
+            tts("badAuth");
         syncer = anki.sync.Syncer(collection, remoteServer)
         # this is causing a problem
         syncResult = syncer.sync()
@@ -143,10 +145,17 @@ def sync():
             tts("collection downloaded from remote server")
         else:
             tts(syncer.sync())
-    except:
+    except Exception, e:
+        log = traceback.format_exc()
+        err = repr(str(e))
+        if ( "Unable to find the server" in err or
+                "Errno 2" in err):
+            tss("offline");
+        print(log);
         print sys.exc_info()
         tts(str(sys.exc_info()[0]))
         tts("There are {} cards in your collection".format(collection.cardCount()))
+
 
 def getInput():
     return raw_input()

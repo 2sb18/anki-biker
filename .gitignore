@@ -1,4 +1,4 @@
-/collection.*
+/collection*
 /anki_config.pyc
 /config.json
 /*.anki2*
@@ -6,3 +6,4 @@
 backup*
 temp*
 deleted.txt
+/collection/collection.anki2
