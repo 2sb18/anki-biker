@@ -21,6 +21,12 @@ import pdb
 # module shouldn't exist
 try:
     import pifacedigitalio
+    pifacedigital = pifacedigitalio.PiFaceDigital()
+    listener = pifacedigitalio.InputEventListener(chip=pifacedigital)
+    def print_input(event):
+        print(event.pin_num + 1)
+    listener.register(0,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
+    listener.activate()
     raspberry = True
 except ImportError:
     raspberry = False
@@ -37,13 +43,17 @@ except OSError:
 
 textReplacements = dict([
     ('>', 'greater than'),
+    ('>', 'less than'),
+    ('$', 'dollar sign'),
     ('-', 'dash'),
     ('ctrl-', 'control'),
     # in the case of clozes?
     ('[...]', 'what'),
     (';', 'semicolon'),
     ('{', 'open curly bracket'),
-    ('}', 'close curly bracket')
+    ('}', 'close curly bracket'),
+    ('[', 'open square bracket'),
+    (']', 'close square bracket')
     ])
 
 cmd_folder = os.path.realpath(os.path.abspath(os.path.join(
@@ -51,20 +61,8 @@ cmd_folder = os.path.realpath(os.path.abspath(os.path.join(
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-# move into the anki dev folder
-# os.chdir('anki')
-# print os.system('pwd')
 import anki
 import anki.sync
-
-def print_input(event):
-    print(event.pin_num + 1)
-
-if raspberry:
-    pifacedigital = pifacedigitalio.PiFaceDigital()
-    listener = pifacedigitalio.InputEventListener(chip=pifacedigital)
-    listener.register(0,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
-    listener.activate()
 
 # the collection should be in the current directory
 collection = anki.Collection(config['collection_filename'])
@@ -91,6 +89,7 @@ def getCard():
     if collection.cardCount() == 0:
         return False
     while ( 1 ):
+        # sched.getCard() is really just cards.Card(collection) 
         currentCard = collection.sched.getCard()
         if re.search('<img', currentCard.a()) == None:
             break
@@ -99,6 +98,7 @@ def getCard():
 def tts(text):
     print "saying: " + text
     subprocess.call(["flite", "-t", text])
+    print "done tts"
 
 # make it so text is readable by flite
 def cleanCard(text):
@@ -144,6 +144,7 @@ def sync():
         else:
             tts(syncer.sync())
     except:
+        print sys.exc_info()
         tts(str(sys.exc_info()[0]))
         tts("There are {} cards in your collection".format(collection.cardCount()))
 
@@ -160,8 +161,7 @@ def getCardAndAsk():
 
 
 # try syncing on startup
-# !!! going to have to put this back in
-# sync()
+sync()
 
 #get new card and ask it
 getCardAndAsk()
@@ -173,6 +173,8 @@ while(1):
         if input >= 1 and input <= 4:
             # answer question
             collection.sched.answerCard(currentCard,input)
+            collection.save()
+            # !!! change to "answering input"
             tts(str(input))
             # get new card and ask it
             getCardAndAsk()
@@ -232,9 +234,9 @@ while(1):
             elif state == "said_answer":
                 # going to answer three
                 collection.sched.answerCard(currentCard,3)
-                tts(str(input))
+                collection.save()
+                tts("answering 3")
                 # get new card and ask it
                 getCardAndAsk()
-            state = "asked_question"
         else:
             tts("Unrecognized thing entered")
