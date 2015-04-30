@@ -74,6 +74,11 @@ currentVolume = 80
 # state can be "idle", "asked_question", "said_answer"
 state = "idle"
 
+def tts(text):
+    print "saying: " + text
+    subprocess.call(["flite", "-t", text])
+    print "done tts"
+
 # set the volume to 80 percent
 # proc = subprocess.Popen(
 
@@ -81,24 +86,18 @@ state = "idle"
 # that allows you to select a deck.
 # currentDeck
 
-# returns true if we could get a card, false if
-# not
-def getCard():
+# returns true if we could get a card, false if not
+def getNewCard():
     global currentCard
     # if there's an "<img" then get another card
     if collection.cardCount() == 0:
         return False
     while ( 1 ):
-        # sched.getCard() is really just cards.Card(collection) 
-        currentCard = collection.sched.getCard()
+        # sched.getNewCard() is really just cards.Card(collection) 
+        currentCard = collection.sched.getNewCard()
         if re.search('<img', currentCard.a()) == None:
             break
     return True
-
-def tts(text):
-    print "saying: " + text
-    subprocess.call(["flite", "-t", text])
-    print "done tts"
 
 # make it so text is readable by flite
 def cleanCard(text):
@@ -156,66 +155,84 @@ def sync():
         tts(str(sys.exc_info()[0]))
         tts("There are {} cards in your collection".format(collection.cardCount()))
 
-
 def getInput():
     return raw_input()
 
-def getCardAndAsk():
+def getNewCardAndAsk():
     global state
-    if getCard():
+    if getNewCard():
         tts(cleanCard(currentCard.q()))
     else:
         tts("can't get another card")
     state = "asked_question"
+
+def repeatQuestion():
+    if currentCard:
+        tts(cleanCard(currentCard.q()))
+        state = "asked_question"
+    else:
+        tts("no question to repeat")
+
+def repeatAnswer():
+    # repeat answer
+    if currentCard:
+        tts(cleanCard(currentCard.a()))
+        state = "said_answer"
+    else:
+        tts("no answer to repeat")
+
+def markAndBuryCard():
+    if currentCard:
+        collection.markReview(currentCard)
+        collection.sched.buryNote(currentCard.nid)
+        tts("mark and bury")
+    else:
+        tts("no card to bury")
+
+
+def answerQuestion(input):
+    # answer question
+    collection.sched.answerCard(currentCard,input)
+    collection.save()
+    tts(str(input))
+
+
 
 
 # try syncing on startup
 sync()
 
 #get new card and ask it
-getCardAndAsk()
+getNewCardAndAsk()
+
+# right hand answers the questions
+# index go forward (answer 3
+# middle
+# ring
+# pinky
+# 
+# pinky 1, ring 2, middle 3, index 4
+#
+# left hand deals with extra commands
+
+# (repeat question, repeat answer, sync, suspend
 
 while(1):
     input = getInput()
     try:
         input = int(input)
         if input >= 1 and input <= 4:
-            # answer question
-            collection.sched.answerCard(currentCard,input)
-            collection.save()
-            # !!! change to "answering input"
-            tts(str(input))
-            # get new card and ask it
-            getCardAndAsk()
+            answerQuestion(input)
+            getNewCardAndAsk()
         elif input == 5:
-            # get new card and ask it
-            getCardAndAsk()
+            getNewCardAndAsk()
         elif input == 6:
-            # repeat question
-            if currentCard:
-                tts(cleanCard(currentCard.q()))
-                state = "asked_question"
-            else:
-                tts("no question to repeat")
+            repeatQuestion()
         elif input == 7:
-            # repeat answer
-            if currentCard:
-                tts(cleanCard(currentCard.a()))
-                state = "said_answer"
-            else:
-                tts("no answer to repeat")
+            repeatAnswer()
         elif input == 8:
-            if currentCard:
-                # !!! at some point we just want to suspend
-                # mark and bury card
-                tts("mark and bury")
-                # mark
-                collection.markReview(currentCard)
-                # buryCards in sched.py 
-                collection.sched.buryNote(currentCard.nid)
-                getCardAndAsk()
-            else:
-                tts("no card to bury")
+            markAndBuryCard()
+            getNewCardAndAsk()
         elif input == 9:
             tts("help")
             tts("1 to 4: select ease.")
@@ -241,11 +258,7 @@ while(1):
                 else:
                     tts("no answer to repeat")
             elif state == "said_answer":
-                # going to answer three
-                collection.sched.answerCard(currentCard,3)
-                collection.save()
-                tts("answering 3")
-                # get new card and ask it
-                getCardAndAsk()
+                answerQuestion(3)
+                getNewCardAndAsk()
         else:
             tts("Unrecognized thing entered")
