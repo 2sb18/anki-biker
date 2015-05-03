@@ -25,8 +25,14 @@ try:
     pifacedigital = pifacedigitalio.PiFaceDigital()
     listener = pifacedigitalio.InputEventListener(chip=pifacedigital)
     def print_input(event):
-        print(event.pin_num + 1)
-    listener.register(0,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
+        global input
+        # print(event.pin_num)
+        mapthing = [3,6,2,5,8,1,4,7]
+        tts(str(mapthing[event.pin_num]))
+        input = mapthing[event.pin_num]
+        # eventHappened(mapthing[event.pin_num])
+    for i in range(8):
+        listener.register(i,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
     listener.activate()
     raspberry = True
 except ImportError:
@@ -74,6 +80,8 @@ currentVolume = 80
 # state can be "idle", "asked_question", "said_answer"
 state = "idle"
 
+input = 0
+
 def tts(text):
     print "saying: " + text
     subprocess.call(["flite", "-t", text])
@@ -93,8 +101,8 @@ def getNewCard():
     if collection.cardCount() == 0:
         return False
     while ( 1 ):
-        # sched.getNewCard() is really just cards.Card(collection) 
-        currentCard = collection.sched.getNewCard()
+        # sched.getCard() is really just cards.Card(collection) 
+        currentCard = collection.sched.getCard()
         if re.search('<img', currentCard.a()) == None:
             break
     return True
@@ -145,15 +153,18 @@ def sync():
         else:
             tts(syncer.sync())
     except Exception, e:
-        log = traceback.format_exc()
+        tts ( "Can't sync" )
         err = repr(str(e))
-        if ( "Unable to find the server" in err or
+        if ( "501" in err ):
+            tts("You need to update Anki, your version is too old.")
+        elif ( "Unable to find the server" in err or
                 "Errno 2" in err):
-            tss("offline");
-        print(log);
-        print sys.exc_info()
-        tts(str(sys.exc_info()[0]))
-        tts("There are {} cards in your collection".format(collection.cardCount()))
+            tts("You need to be hooked up to the Internet to sync");
+        else:
+          log = traceback.format_exc()
+          print(log);
+          print sys.exc_info()
+          tts(str(sys.exc_info()[0]))
 
 def getInput():
     return raw_input()
@@ -202,6 +213,11 @@ def answerQuestion(input):
 # try syncing on startup
 sync()
 
+try:
+    tts("There are {} cards in your collection".format(collection.cardCount()))
+except:
+    pass
+
 #get new card and ask it
 getNewCardAndAsk()
 
@@ -217,48 +233,47 @@ getNewCardAndAsk()
 
 # (repeat question, repeat answer, sync, suspend
 
-while(1):
-    input = getInput()
-    try:
-        input = int(input)
-        if input >= 1 and input <= 4:
-            answerQuestion(input)
-            getNewCardAndAsk()
-        elif input == 5:
-            getNewCardAndAsk()
-        elif input == 6:
-            repeatQuestion()
-        elif input == 7:
-            repeatAnswer()
-        elif input == 8:
-            markAndBuryCard()
-            getNewCardAndAsk()
-        elif input == 9:
-            tts("help")
-            tts("1 to 4: select ease.")
-            tts("5: get new card.")
-            tts("6: repeat question.")
-            tts("7: repeat answer.")
-            tts("8: mark and bury.")
-            tts("9: menu you dummy.")
-            tts("0: sync")
-        elif input == 0:
-            sync()
-    except ValueError:
-        # input is not a number
-        # state can be "idle", "asked_question", "said_answer"
-        if input == '':
-            print state
-            if state == "asked_question":
-                # going to say answer
-                if currentCard:
-                    tts(cleanCard(currentCard.a()))
-                    # !!! don't know why this isn't sticking!
-                    state = "said_answer"
-                else:
-                    tts("no answer to repeat")
-            elif state == "said_answer":
-                answerQuestion(3)
-                getNewCardAndAsk()
-        else:
-            tts("Unrecognized thing entered")
+
+def eventHappened(event_input):
+    if event_input >= 1 and event_input <= 4:
+        answerQuestion(event_input)
+        getNewCardAndAsk()
+    elif event_input == 5:
+        repeatQuestion()
+    elif event_input == 6:
+        repeatAnswer()
+    elif event_input == 7:
+        markAndBuryCard()
+        getNewCardAndAsk()
+    elif event_input == 8:
+        state = "special_menu"
+
+while (1):
+    if ( input != 0 ):
+        eventHappened ( input )
+        input = 0
+
+    #
+    # input = getInput()
+    # try:
+    #     input = int ( input )
+    #     eventHappened(input)
+    # except ValueError:
+    #     # input is not a number
+    #     # state can be "idle", "asked_question", "said_answer"
+    #     if input == '':
+    #         print state
+    #         if state == "asked_question":
+    #             # going to say answer
+    #             if currentCard:
+    #                 tts(cleanCard(currentCard.a()))
+    #                 # !!! don't know why this isn't sticking!
+    #                 state = "said_answer"
+    #             else:
+    #                 tts("no answer to repeat")
+    #         elif state == "said_answer":
+    #             answerQuestion(3)
+    #             getNewCardAndAsk()
+    #     else:
+    #         tts("Unrecognized thing entered")
+
