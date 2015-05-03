@@ -92,7 +92,7 @@ def tts(text):
     print "saying: " + text
     # subprocess.call(['flite', '-t', text])
     # subprocess.call(['anki-tts.sh', text])
-    subprocess.call([ankitts_file, text])
+    subprocess.call([ankitts_file, text, ])
     print "done tts"
 
 # set the volume to 80 percent
