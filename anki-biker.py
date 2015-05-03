@@ -34,9 +34,8 @@ try:
     for i in range(8):
         listener.register(i,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
     listener.activate()
-    raspberry = True
 except ImportError:
-    raspberry = False
+    pass
 
 try:
     config = json.load(open('config.json'))
@@ -82,9 +81,15 @@ state = "idle"
 
 input = 0
 
+
+ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
+
 def tts(text):
+    global ankitts_file
     print "saying: " + text
-    subprocess.call(["flite", "-t", text])
+    # subprocess.call(['flite', '-t', text])
+    # subprocess.call(['anki-tts.sh', text])
+    subprocess.call([ankitts_file, text])
     print "done tts"
 
 # set the volume to 80 percent
@@ -134,8 +139,7 @@ def cleanCard(text):
     return text
 
 def sync():
-    # saying "sinking" cause it sounds better
-    tts("sinking")
+    tts("syncing")
     try:
         remoteServer = anki.sync.RemoteServer(None)
         # create the hostkey
@@ -143,7 +147,6 @@ def sync():
         if not hostkey:
             tts("badAuth");
         syncer = anki.sync.Syncer(collection, remoteServer)
-        # this is causing a problem
         syncResult = syncer.sync()
         if syncResult == "fullSync":
             tts("schemas differ. need to download. downloading...")
