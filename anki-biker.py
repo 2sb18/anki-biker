@@ -17,6 +17,8 @@ import sys
 import pdb
 import traceback
 
+ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
+
 # for input to raspberry pi
 # if we aren't using the raspberry (ie we are developing or debugging), this
 # module shouldn't exist
@@ -82,7 +84,8 @@ state = "idle"
 input = 0
 
 
-ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
+
+print ankitts_file
 
 def tts(text):
     global ankitts_file
