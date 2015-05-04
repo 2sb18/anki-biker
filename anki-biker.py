@@ -55,13 +55,19 @@ textReplacements = dict([
     ('$', 'dollar sign'),
     ('-', 'dash'),
     ('ctrl-', 'control'),
+    ('|', 'pipe'),
+    (':', 'colon'),
+    (';', 'semicolon'),
+    ('!', 'bang'),
     # in the case of clozes?
     ('[...]', 'what'),
     (';', 'semicolon'),
     ('{', 'open curly bracket'),
     ('}', 'close curly bracket'),
     ('[', 'open square bracket'),
-    (']', 'close square bracket')
+    (']', 'close square bracket'),
+    ('(', 'open bracket'),
+    (')', 'close bracket')
     ])
 
 cmd_folder = "/usr/share/anki"
@@ -83,8 +89,6 @@ state = "idle"
 
 input = 0
 
-
-
 print ankitts_file
 
 def tts(text):
@@ -93,7 +97,7 @@ def tts(text):
     # subprocess.call(['flite', '-t', text])
     # subprocess.call(['anki-tts.sh', text])
     subprocess.call([ankitts_file, text, ])
-    print "done tts"
+    # print "done tts"
 
 # set the volume to 80 percent
 # proc = subprocess.Popen(
@@ -115,7 +119,7 @@ def getNewCard():
             break
     return True
 
-# make it so text is readable by flite
+# make it so text is readable by tts
 def cleanCard(text):
     # return re.sub( r'<style>.*</style>', r'', text, flags=re.DOTALL)
 
@@ -139,7 +143,7 @@ def cleanCard(text):
     for k, v in textReplacements.iteritems():
         # put spaces around the values
         text = string.replace(text, k, ' ' + v + ' ')
-    return text
+    return text.rstrip()
 
 def sync():
     tts("syncing")
@@ -147,8 +151,8 @@ def sync():
         remoteServer = anki.sync.RemoteServer(None)
         # create the hostkey
         hostkey = remoteServer.hostKey(config['username'], config['password'])
-        if not hostkey:
-            tts("badAuth");
+        # if not hostkey:
+        #     tts("Bad Authorization");
         syncer = anki.sync.Syncer(collection, remoteServer)
         syncResult = syncer.sync()
         if syncResult == "fullSync":
@@ -171,9 +175,6 @@ def sync():
           print(log);
           print sys.exc_info()
           tts(str(sys.exc_info()[0]))
-
-def getInput():
-    return raw_input()
 
 def getNewCardAndAsk():
     global state
@@ -241,45 +242,45 @@ getNewCardAndAsk()
 
 
 def eventHappened(event_input):
-    if event_input >= 1 and event_input <= 4:
-        answerQuestion(event_input)
-        getNewCardAndAsk()
-    elif event_input == 5:
-        repeatQuestion()
-    elif event_input == 6:
-        repeatAnswer()
-    elif event_input == 7:
-        markAndBuryCard()
-        getNewCardAndAsk()
-    elif event_input == 8:
-        state = "special_menu"
+    global state
+    if state == "special_menu":
+        if event_input == 8:
+            tts("exiting special menu")
+            state = "idle"
+        elif event_input == 7:
+            sync()
+    else:
+        if event_input >= 1 and event_input <= 4:
+            answerQuestion(event_input)
+            getNewCardAndAsk()
+        elif event_input == 5:
+            repeatQuestion()
+        elif event_input == 6:
+            repeatAnswer()
+        elif event_input == 7:
+            markAndBuryCard()
+            getNewCardAndAsk()
+        elif event_input == 8:
+            tts("special menu")
+            state = "special_menu"
 
-while (1):
-    if ( input != 0 ):
-        eventHappened ( input )
-        input = 0
+import sys
+import select
+import tty
+import termios
 
-    #
-    # input = getInput()
-    # try:
-    #     input = int ( input )
-    #     eventHappened(input)
-    # except ValueError:
-    #     # input is not a number
-    #     # state can be "idle", "asked_question", "said_answer"
-    #     if input == '':
-    #         print state
-    #         if state == "asked_question":
-    #             # going to say answer
-    #             if currentCard:
-    #                 tts(cleanCard(currentCard.a()))
-    #                 # !!! don't know why this isn't sticking!
-    #                 state = "said_answer"
-    #             else:
-    #                 tts("no answer to repeat")
-    #         elif state == "said_answer":
-    #             answerQuestion(3)
-    #             getNewCardAndAsk()
-    #     else:
-    #         tts("Unrecognized thing entered")
-
+old_settings = termios.tcgetattr(sys.stdin)
+try:
+    tty.setcbreak(sys.stdin.fileno())
+    while (1):
+        # is there any keyboard input
+        if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
+            c = sys.stdin.read(1)
+            if c >= '1' and c <= '8':
+                print c
+                input = int(c)
+        if ( input != 0 ):
+            eventHappened ( input )
+            input = 0
+finally:
+    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
