@@ -59,6 +59,9 @@ textReplacements = dict([
     (':', 'colon'),
     (';', 'semicolon'),
     ('!', 'bang'),
+    ('`', 'backtick'),
+    ('*', 'asterix'),
+    ('#', 'hash sign'),
     # in the case of clozes?
     ('[...]', 'what'),
     (';', 'semicolon'),
@@ -269,6 +272,8 @@ import select
 import tty
 import termios
 
+# got this idea for non-blocking keyboard input from Graham King at
+# http://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/
 old_settings = termios.tcgetattr(sys.stdin)
 try:
     tty.setcbreak(sys.stdin.fileno())
