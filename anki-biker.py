@@ -1,5 +1,5 @@
 # idea from stackoverflow 279237
-import os, sys, inspect
+import os, sys, inspect, time
 # regex functions
 import re
 # tts support
@@ -23,18 +23,21 @@ ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
 # if we aren't using the raspberry (ie we are developing or debugging), this
 # module shouldn't exist
 try:
-    import pifacedigitalio
-    pifacedigital = pifacedigitalio.PiFaceDigital()
-    listener = pifacedigitalio.InputEventListener(chip=pifacedigital)
+    import pifacedigitalio as p
+    p.init()
+    pifacedigital = p.PiFaceDigital()
+    listener = p.InputEventListener(chip=pifacedigital)
     def print_input(event):
         global input
         # print(event.pin_num)
         mapthing = [3,6,2,5,8,1,4,7]
-        tts(str(mapthing[event.pin_num]))
-        input = mapthing[event.pin_num]
+        # debounce for 50ms	
+        time.sleep ( 0.05 )
+        if p.digital_read(event.pin_num):
+            input = mapthing[event.pin_num]
         # eventHappened(mapthing[event.pin_num])
     for i in range(8):
-        listener.register(i,pifacedigitalio.IODIR_FALLING_EDGE, print_input)
+        listener.register(i,p.IODIR_FALLING_EDGE, print_input)
     listener.activate()
 except ImportError:
     pass
