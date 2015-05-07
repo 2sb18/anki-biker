@@ -6,6 +6,8 @@
 # curl has --silent and --show-error
 # mplayer has -really-quiet
 
+MAX_LENGTH=90
+
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
 # make the tts directory if it doesn't exist
