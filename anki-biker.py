@@ -17,6 +17,11 @@ import sys
 import pdb
 import traceback
 
+# for keyboard input
+import select
+import tty
+import termios
+
 ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
 
 # for input to raspberry pi
@@ -105,6 +110,11 @@ def tts(text):
     subprocess.call([ankitts_file, text, ])
     # print "done tts"
 
+def crap_tts(text):
+    print "saying this crappily: " + text
+    subprocess.call(['flite', '-t', text])
+
+
 # set the volume to 80 percent
 # proc = subprocess.Popen(
 
@@ -152,42 +162,42 @@ def cleanCard(text):
     return text.rstrip()
 
 def sync():
-    tts("syncing")
+    crap_tts("syncing")
     try:
         remoteServer = anki.sync.RemoteServer(None)
         # create the hostkey
         hostkey = remoteServer.hostKey(config['username'], config['password'])
         # if not hostkey:
-        #     tts("Bad Authorization");
+        #     crap_tts("Bad Authorization");
         syncer = anki.sync.Syncer(collection, remoteServer)
         syncResult = syncer.sync()
         if syncResult == "fullSync":
-            tts("schemas differ. need to download. downloading...")
+            crap_tts("schemas differ. need to download. downloading...")
             fullSyncer = anki.sync.FullSyncer(collection, hostkey, None)
             fullSyncer.download()
-            tts("collection downloaded from remote server")
+            crap_tts("collection downloaded from remote server")
         else:
-            tts(syncer.sync())
+            crap_tts(syncer.sync())
     except Exception, e:
-        tts ( "Can't sync" )
+        crap_tts ( "Can't sync" )
         err = repr(str(e))
         if ( "501" in err ):
-            tts("You need to update Anki, your version is too old.")
+            crap_tts("You need to update Anki, your version is too old.")
         elif ( "Unable to find the server" in err or
                 "Errno 2" in err):
-            tts("You need to be hooked up to the Internet to sync");
+            crap_tts("You need to be hooked up to the Internet to sync");
         else:
           log = traceback.format_exc()
           print(log);
           print sys.exc_info()
-          tts(str(sys.exc_info()[0]))
+          crap_tts(str(sys.exc_info()[0]))
 
 def getNewCardAndAsk():
     global state
     if getNewCard():
         tts(cleanCard(currentCard.q()))
     else:
-        tts("can't get another card")
+        crap_tts("can't get another card")
     state = "asked_question"
 
 def repeatQuestion():
@@ -195,7 +205,7 @@ def repeatQuestion():
         tts(cleanCard(currentCard.q()))
         state = "asked_question"
     else:
-        tts("no question to repeat")
+        crap_tts("no question to repeat")
 
 def repeatAnswer():
     # repeat answer
@@ -203,36 +213,35 @@ def repeatAnswer():
         tts(cleanCard(currentCard.a()))
         state = "said_answer"
     else:
-        tts("no answer to repeat")
+        crap_tts("no answer to repeat")
 
 def markAndBuryCard():
     if currentCard:
         collection.markReview(currentCard)
         collection.sched.buryNote(currentCard.nid)
-        tts("mark and bury")
+        crap_tts("mark and bury")
     else:
-        tts("no card to bury")
+        crap_tts("no card to bury")
 
 
 def answerQuestion(input):
     # answer question
     collection.sched.answerCard(currentCard,input)
     collection.save()
-    tts(str(input))
+    crap_tts(str(input))
+
+# collection.cardCount(): get total number of cards in collection
+# collection.save(): save database state?
+
+# sched is part of a collection
+# sched.deckDueList(): returns array of all the decks with info about how much is due
+# sched.getCard(): pop next card from queue. None if finished
+# sched.reset(): reset the due queue.
+# sched.answerCard(card, ease): answer a card
+# sched.counts(card=None): not sure about this
 
 
 
-
-# try syncing on startup
-sync()
-
-try:
-    tts("There are {} cards in your collection".format(collection.cardCount()))
-except:
-    pass
-
-#get new card and ask it
-getNewCardAndAsk()
 
 # right hand answers the questions
 # index go forward (answer 3
@@ -251,7 +260,7 @@ def eventHappened(event_input):
     global state
     if state == "special_menu":
         if event_input == 8:
-            tts("exiting special menu")
+            crap_tts("exiting special menu")
             state = "idle"
         elif event_input == 7:
             sync()
@@ -267,13 +276,20 @@ def eventHappened(event_input):
             markAndBuryCard()
             getNewCardAndAsk()
         elif event_input == 8:
-            tts("special menu")
+            crap_tts("special menu")
             state = "special_menu"
 
-import sys
-import select
-import tty
-import termios
+
+# try syncing on startup
+sync()
+
+try:
+    crap_tts("There are {} cards in your collection".format(collection.cardCount()))
+except:
+    pass
+
+#get new card and ask it
+getNewCardAndAsk()
 
 # got this idea for non-blocking keyboard input from Graham King at
 # http://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/

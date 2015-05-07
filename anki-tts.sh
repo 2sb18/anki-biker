@@ -15,45 +15,36 @@ create_file_name() {
   FILE_NAME=$( md5sum <<< "$1" | cut --delimiter ' ' --fields 1-1 )
 }
 
-# first argument is the text, second argument is the file_name
-curl_thing () {
-    curl --silent --show-error --get --data-urlencode "q=$1" https://translate.google.com/translate_tts?tl=en -H 'user-agent:' > $DIR/tts/$2.mp3
-}
-
-# uses the FILE_NAME variable created in this script
-# the argument is the text to be downloaded
-download_if_missing() {
-  if [ ! -s $DIR/tts/$FILE_NAME.mp3 ]
-  then
-    play_audio downloading
-    echo "downloading tts file"
-    curl_thing "$1" $FILE_NAME
-  fi
-}
-
 # the argument is the file_name
 play_audio() {
   # if the size of the file is 0, that's a problem
   if [ ! -s $DIR/tts/$1.mp3 ]
   then
-    play_audio problem
-    echo "there was a problem getting the tts file"
+    flite -t "can't find audio file"
+    echo "can't find audio file"
   else
     mplayer -really-quiet $DIR/tts/$1.mp3 2> /dev/null
   fi
 }
 
-# gotta make sure the "downloading" and "problem" audio exists
-if [ ! -s $DIR/tts/downloading.mp3 -o ! -s $DIR/tts/problem.mp3 ]
-then
-  curl_thing downloading downloading
-  curl_thing problem problem
-fi
+TEXT_LEFT=$1
 
-create_file_name "$1"
-download_if_missing "$1"
-play_audio $FILE_NAME
+# turn newlines into spaces
+TEXT_LEFT=$(echo $TEXT_LEFT | tr --squeeze-repeats '\n' ' ')
 
+while [ ${#TEXT_LEFT} -gt 1 ]
+do
+  # echo "TEXT_LEFT is starting off at size" ${#TEXT_LEFT}
+  TEXT_TAKEN=$( echo $TEXT_LEFT | grep -Po '^.{0,'$MAX_LENGTH'}(\s|$)' )
+  # echo "SIZE OF TEXT_TAKEN is" ${#TEXT_TAKEN}
+  SIZE=${#TEXT_TAKEN}
+  TEXT_LEFT=${TEXT_LEFT:SIZE}
+  create_file_name "$TEXT_TAKEN"
+  play_audio $FILE_NAME
+  echo "Text to say:" $TEXT_TAKEN
+  echo "filename:" $FILE_NAME
+  echo ""
+done
 
 
 
