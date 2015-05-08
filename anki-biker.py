@@ -215,6 +215,7 @@ def repeatAnswer():
     else:
         crap_tts("no answer to repeat")
 
+# this doesn't seem to mark the card
 def markAndBuryCard():
     if currentCard:
         collection.markReview(currentCard)
@@ -223,6 +224,12 @@ def markAndBuryCard():
     else:
         crap_tts("no card to bury")
 
+def suspendCard():
+    if currentCard:
+        collection.sched.suspendCards([currentCard.id])
+        crap_tts("suspended")
+    else:
+        crap_tts("no card to suspend")
 
 def answerQuestion(input):
     # answer question
@@ -273,7 +280,7 @@ def eventHappened(event_input):
         elif event_input == 6:
             repeatAnswer()
         elif event_input == 7:
-            markAndBuryCard()
+            suspendCard()
             getNewCardAndAsk()
         elif event_input == 8:
             crap_tts("special menu")
