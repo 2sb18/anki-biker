@@ -19,12 +19,6 @@ import sys
 import pdb
 import traceback
 
-# for keyboard input
-import select
-import tty
-import termios
-
-
 downloadtts_file = os.path.dirname(os.path.realpath(__file__)) + '/download-tts.sh'
 
 try:
@@ -50,6 +44,7 @@ textReplacements = dict([
     ('`', 'backtick'),
     ('*', 'asterix'),
     ('#', 'hash sign'),
+    ('%', 'percent sign'),
     # in the case of clozes?
     ('[...]', 'what'),
     (';', 'semicolon'),
@@ -68,23 +63,8 @@ if cmd_folder not in sys.path:
 import anki
 import anki.sync
 
-currentCard = 0
-
 # the collection should be in the current directory
 collection = anki.Collection(config['collection_filename'], log=True)
-
-# returns true if we could get a card, false if not
-def getNewCard():
-    global currentCard
-    # if there's an "<img" then get another card
-    if collection.cardCount() == 0:
-        return False
-    while ( 1 ):
-        # sched.getCard() is really just cards.Card(collection) 
-        currentCard = collection.sched.getCard()
-        if re.search('<img', currentCard.a()) == None:
-            break
-    return True
 
 # make it so text is readable by tts
 def cleanCard(text):
@@ -143,29 +123,30 @@ def sync():
           print sys.exc_info()
           print str(sys.exc_info()[0])
 
-def downloadCard():
-    # currentCard has the card we want to download
-    subprocess.call([downloadtts_file, cleanCard(currentCard.q())])
-    subprocess.call([downloadtts_file, cleanCard(currentCard.a())])
-        
-
 sync()
 
-x = 0
-
-currentCard = collection.sched.getCard()
-while currentCard:
-    print "on card " + str(x)
-    downloadCard()
-    x = x + 1
-    currentCard = collection.sched.getCard()
-
-print x
-
-while 1:
-    pass
-
-
+# is this the best way to get all the cards?
+for card_id in collection.findCards(""):
+    current_card = collection.getCard(card_id)
+    try:
+        subprocess.call([downloadtts_file, cleanCard(current_card.q())])
+        subprocess.call([downloadtts_file, cleanCard(current_card.a())])
+    except:
+        pass
+#
+# currentCard = collection.sched.getCard()
+# while currentCard:
+#     print "on card " + str(x)
+#     downloadCard()
+#     x = x + 1
+#     currentCard = collection.sched.getCard()
+#
+# print x
+#
+# while 1:
+#     pass
+#
+#
 
 
 

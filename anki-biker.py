@@ -107,7 +107,7 @@ def tts(text):
     print "saying: " + text
     # subprocess.call(['flite', '-t', text])
     # subprocess.call(['anki-tts.sh', text])
-    subprocess.call([ankitts_file, text, ])
+    subprocess.call([ankitts_file, text ])
     # print "done tts"
 
 def crap_tts(text):
