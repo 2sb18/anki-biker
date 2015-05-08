@@ -71,7 +71,7 @@ textReplacements = dict([
     ('`', 'backtick'),
     ('*', 'asterix'),
     ('#', 'hash sign'),
-    ('\', 'backslash'),
+    ('\\', 'backslash'),
     ('/', 'slash'),
     ('etc', 'et see'),
     # in the case of clozes?

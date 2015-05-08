@@ -20,9 +20,10 @@ import pdb
 import traceback
 
 downloadtts_file = os.path.dirname(os.path.realpath(__file__)) + '/download-tts.sh'
+config_file = os.path.dirname(os.path.realpath(__file__)) + '/config.json'
 
 try:
-    config = json.load(open('config.json'))
+    config = json.load(open(config_file))
 except IOError:
     sys.exit('config.json file missing. run "python create-config.py" to create one.')
 
@@ -44,7 +45,9 @@ textReplacements = dict([
     ('`', 'backtick'),
     ('*', 'asterix'),
     ('#', 'hash sign'),
-    ('%', 'percent sign'),
+    ('\\', 'backslash'),
+    ('/', 'slash'),
+    ('etc', 'et see'),
     # in the case of clozes?
     ('[...]', 'what'),
     (';', 'semicolon'),
@@ -64,7 +67,8 @@ import anki
 import anki.sync
 
 # the collection should be in the current directory
-collection = anki.Collection(config['collection_filename'], log=True)
+collection_filename = os.path.dirname(os.path.realpath(__file__)) + '/' + config['collection_filename']
+collection = anki.Collection(collection_filename, log=True)
 
 # make it so text is readable by tts
 def cleanCard(text):
