@@ -44,7 +44,7 @@ try:
     for i in range(8):
         listener.register(i,p.IODIR_FALLING_EDGE, print_input)
     listener.activate()
-except ImportError:
+except:
     pass
 
 try:
