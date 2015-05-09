@@ -22,6 +22,8 @@ import select
 import tty
 import termios
 
+print "filesystemencoding is " + sys.getfilesystemencoding().lower()
+
 ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
 config_file = os.path.dirname(os.path.realpath(__file__)) + '/config.json'
 
@@ -117,7 +119,10 @@ def tts(text):
 
 def crap_tts(text):
     print "saying this crappily: " + text
-    subprocess.call(['flite', '-t', text])
+    try:
+        subprocess.call(['flite', '-t', text])
+    except OSError:
+        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
 
 
 # set the volume to 80 percent
@@ -303,10 +308,11 @@ except:
 #get new card and ask it
 getNewCardAndAsk()
 
+
 # got this idea for non-blocking keyboard input from Graham King at
 # http://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/
-old_settings = termios.tcgetattr(sys.stdin)
 try:
+    old_settings = termios.tcgetattr(sys.stdin)
     tty.setcbreak(sys.stdin.fileno())
     while (1):
         # is there any keyboard input
@@ -315,6 +321,11 @@ try:
             if c >= '1' and c <= '8':
                 print c
                 input = int(c)
+        if ( input != 0 ):
+            eventHappened ( input )
+            input = 0
+except:
+    while (1):
         if ( input != 0 ):
             eventHappened ( input )
             input = 0
