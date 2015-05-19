@@ -26,7 +26,11 @@ LC_ALL="en_GB.utf8" python /home/pi/anki-biker/anki-biker.py &
 # sched.answerCard(card, ease): answer a card
 # sched.counts(card=None): not sure about this
 
+THINGS TO DO
 
+- less than or greater than is screwed up
+- backup collection before syncing
+- 
 
 
 

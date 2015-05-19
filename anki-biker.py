@@ -27,6 +27,21 @@ print "filesystemencoding is " + sys.getfilesystemencoding().lower()
 ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
 config_file = os.path.dirname(os.path.realpath(__file__)) + '/config.json'
 
+def tts(text):
+    global ankitts_file
+    print "saying: " + text
+    # subprocess.call(['flite', '-t', text])
+    # subprocess.call(['anki-tts.sh', text])
+    subprocess.call([ankitts_file, text ])
+    # print "done tts"
+
+def crap_tts(text):
+    print "saying this crappily: " + text
+    try:
+        subprocess.call(['flite', '-t', text])
+    except OSError:
+        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
+
 # for input to raspberry pi
 # if we aren't using the raspberry (ie we are developing or debugging), this
 # module shouldn't exist
@@ -47,7 +62,9 @@ try:
     for i in range(8):
         listener.register(i,p.IODIR_FALLING_EDGE, print_input)
     listener.activate()
+    crap_tts ( "PiFaceDigital detected" )
 except:
+    crap_tts ( "PiFaceDigital not detected" )
     pass
 
 try:
@@ -108,22 +125,6 @@ state = "idle"
 input = 0
 
 print ankitts_file
-
-def tts(text):
-    global ankitts_file
-    print "saying: " + text
-    # subprocess.call(['flite', '-t', text])
-    # subprocess.call(['anki-tts.sh', text])
-    subprocess.call([ankitts_file, text ])
-    # print "done tts"
-
-def crap_tts(text):
-    print "saying this crappily: " + text
-    try:
-        subprocess.call(['flite', '-t', text])
-    except OSError:
-        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
-
 
 # set the volume to 80 percent
 # proc = subprocess.Popen(
