@@ -6,6 +6,14 @@ import select
 import tty
 import termios
 
+print "filesystemencoding is " + sys.getfilesystemencoding().lower()
+
+def crap_tts(text):
+    print "saying this crappily: " + text
+    try:
+        subprocess.call(['flite', '-t', text])
+    except OSError:
+        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
 
 # for input to raspberry pi
 # if we aren't using the raspberry (ie we are developing or debugging), this
@@ -27,7 +35,9 @@ try:
     for i in range(8):
         listener.register(i,p.IODIR_FALLING_EDGE, print_input)
     listener.activate()
+    crap_tts ( "PiFaceDigital detected" )
 except:
+    crap_tts ( "PiFaceDigital not detected" )
     pass
 
 currentCard = 0
@@ -167,10 +177,11 @@ except:
 #get new card and ask it
 getNewCardAndAsk()
 
+
 # got this idea for non-blocking keyboard input from Graham King at
 # http://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/
-old_settings = termios.tcgetattr(sys.stdin)
 try:
+    old_settings = termios.tcgetattr(sys.stdin)
     tty.setcbreak(sys.stdin.fileno())
     while (1):
         # is there any keyboard input
@@ -179,6 +190,11 @@ try:
             if c >= '1' and c <= '8':
                 print c
                 input = int(c)
+        if ( input != 0 ):
+            eventHappened ( input )
+            input = 0
+except:
+    while (1):
         if ( input != 0 ):
             eventHappened ( input )
             input = 0

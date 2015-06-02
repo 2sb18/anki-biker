@@ -55,7 +55,10 @@ def tts(text):
 
 def crap_tts(text):
     print "saying this crappily: " + text
-    subprocess.call(['flite', '-t', text])
+    try:
+        subprocess.call(['flite', '-t', text])
+    except OSError:
+        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
 
 # make it so text is readable by tts
 def cleanCard(text):
