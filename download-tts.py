@@ -2,7 +2,6 @@
 
 execfile('common.py')
 
-
 sync()
 
 # is this the best way to get all the cards?
@@ -11,8 +10,11 @@ for card_id in collection.findCards(""):
     try:
         subprocess.call([downloadtts_file, cleanCard(current_card.q())])
         subprocess.call([downloadtts_file, cleanCard(current_card.a())])
-    except:
+    except UnicodeEncodeError:
+        # at some point we'll do something more intelligent with this
         pass
+    except:
+        raise Exception("problem downloading card")
 #
 # currentCard = collection.sched.getCard()
 # while currentCard:

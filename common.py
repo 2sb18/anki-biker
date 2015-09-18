@@ -38,8 +38,12 @@ cmd_folder = "/usr/share/anki"
 if cmd_folder not in sys.path:
     sys.path.insert(0, cmd_folder)
 
-import anki
-import anki.sync
+try:
+    import anki
+    import anki.sync
+except ImportError:
+    sys.exit('anki must be installed to /usr/share/anki. first cd /usr/share/. Then ' +
+            'git clone https://github.com/dae/anki');
 
 # the collection should be in the current directory
 collection_filename = os.path.dirname(os.path.realpath(__file__)) + '/' + config['collection_filename']
@@ -87,7 +91,8 @@ def cleanCard(text):
     return text.rstrip()
 
 def sync():
-    crap_tts("syncing")
+    crap_tts("backing up collection then syncing")
+    subprocess.call(['cp', collection_filename, os.path.dirname(collection_filename) + '/collection.backup'] )
     try:
         remoteServer = anki.sync.RemoteServer(None)
         # create the hostkey

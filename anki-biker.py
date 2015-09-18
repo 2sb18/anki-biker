@@ -42,8 +42,6 @@ except:
 
 currentCard = 0
 
-currentVolume = 80
-
 # state can be "idle", "asked_question", "said_answer"
 state = "idle"
 
