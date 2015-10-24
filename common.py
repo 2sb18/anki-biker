@@ -12,6 +12,9 @@ import string
 # for import of config
 import json
 
+# for log
+import datetime
+
 # for exiting from script prematurely
 import sys
 
@@ -22,6 +25,7 @@ import traceback
 config_file = os.path.dirname(os.path.realpath(__file__)) + '/config.json'
 ankitts_file = os.path.dirname(os.path.realpath(__file__)) + '/anki-tts.sh'
 downloadtts_file = os.path.dirname(os.path.realpath(__file__)) + '/download-tts.sh'
+log_file = os.path.dirname(os.path.realpath(__file__)) + '/log.txt'
 
 try:
     config = json.load(open(config_file))
@@ -52,6 +56,7 @@ collection = anki.Collection(collection_filename, log=True)
 def tts(text):
     global ankitts_file
     print "saying: " + text
+    write_to_log("saying: " + text)
     # subprocess.call(['flite', '-t', text])
     # subprocess.call(['anki-tts.sh', text])
     subprocess.call([ankitts_file, text ])
@@ -59,10 +64,20 @@ def tts(text):
 
 def crap_tts(text):
     print "saying this crappily: " + text
+    write_to_log("saying this crappily: " + text)
     try:
         subprocess.call(['flite', '-t', text])
     except OSError:
         sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
+
+def write_to_log(text):
+    # seems like this won't throw an error even if log file does not exist
+    log = open(log_file, 'a')
+    timestamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S ')
+    log.write(timestamp + text + '\n')
+    log.flush()
+    os.fsync(log) # make sure os is writing the updated file to disk
+
 
 # make it so text is readable by tts
 def cleanCard(text):

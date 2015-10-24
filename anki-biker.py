@@ -8,13 +8,6 @@ import termios
 
 print "filesystemencoding is " + sys.getfilesystemencoding().lower()
 
-def crap_tts(text):
-    print "saying this crappily: " + text
-    try:
-        subprocess.call(['flite', '-t', text])
-    except OSError:
-        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
-
 # for input to raspberry pi
 # if we aren't using the raspberry (ie we are developing or debugging), this
 # module shouldn't exist
@@ -65,8 +58,11 @@ def getNewCard():
     while ( 1 ):
         # sched.getCard() is really just cards.Card(collection) 
         currentCard = collection.sched.getCard()
+        write_to_log("got card with cid " + str(currentCard.id) + " and did " + str(currentCard.did))
         if re.search('<img', currentCard.a()) == None:
             break
+        else:
+            write_to_log("card had img in it")
     return True
 
 def getNewCardAndAsk():
