@@ -55,7 +55,7 @@ while [ ${#TEXT_LEFT} -gt 1 ]; do
   # check to make sure temp.mp3 is really an mp3
   if [ $(file temp.mp3 | grep -c MPEG) != 1 ]; then
     echo "Problem with Google translate. Probably have to change the curl command"
-    exit 1
+    exit 10
   fi
   cat temp.mp3 >> $DIR/tts/$FILE_NAME.mp3
 done
@@ -66,5 +66,5 @@ echo "Done downloading" $FILE_NAME.mp3
 # if the file size is 0 we got a problem
 if [ ! -s $DIR/tts/$FILE_NAME.mp3 ]; then
   echo "File size is zero. We have a problem!"
-  exit 1
+  exit 5
 fi
