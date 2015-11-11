@@ -6,7 +6,12 @@ import select
 import tty
 import termios
 
+# for membrane keypad input
+import RPi.GPIO as GPIO
+
 print "filesystemencoding is " + sys.getfilesystemencoding().lower()
+
+membrane_keypad = 0
 
 # for input to raspberry pi
 # if we aren't using the raspberry (ie we are developing or debugging), this
@@ -30,8 +35,40 @@ try:
     listener.activate()
     crap_tts ( "PiFaceDigital detected" )
 except:
-    crap_tts ( "PiFaceDigital not detected" )
-    pass
+    crap_tts ( "PiFaceDigital not detected, assuming 4x3 keypad attached" )
+    membrane_keypad = 1
+    GPIO.setmode ( GPIO.BCM )
+    GPIO.setup ( 2, GPIO.OUT, 0 ) # row1
+    GPIO.setup ( 3, GPIO.OUT, 0 ) # row2
+    GPIO.setup ( 4, GPIO.OUT, 0 ) # row3
+    GPIO.setup ( 17, GPIO.IN, pull_up_down=GPIO.PUD_DOWN )
+    GPIO.setup ( 27, GPIO.IN, pull_up_down=GPIO.PUD_DOWN )
+    GPIO.setup ( 22, GPIO.IN, pull_up_down=GPIO.PUD_DOWN )
+
+rows = [ 2, 3, 4 ]
+columns = [ 17, 27, 22 ] 
+keys = [[1, 2, 3], [4,5,6], [7, 8, 9]]
+
+
+previous_input = -1
+
+def check_membrane_keypad ():
+    global membrane_keypad, previous_input
+    if membrane_keypad == 0:
+        return -1
+    current_input = -1
+    for ri, row in enumerate(rows):
+        GPIO.output ( row, 1 )
+        time.sleep ( 0.01 )
+        for ci, column in enumerate(columns):
+            if GPIO.input( column ):
+                current_input = keys[ri][ci]
+        GPIO.output ( row, 0 )
+    
+    if previous_input != current_input:
+        previous_input = current_input
+        return current_input
+    return -1
 
 currentCard = 0
 
@@ -135,7 +172,6 @@ def answerQuestion(input):
 
 # (repeat question, repeat answer, sync, suspend
 
-
 def eventHappened(event_input):
     global state
     if state == "special_menu":
@@ -187,7 +223,11 @@ try:
         if ( input != 0 ):
             eventHappened ( input )
             input = 0
-except:
+        membrane_keypad_input = check_membrane_keypad ()
+        if membrane_keypad_input != -1:
+            eventHappened ( membrane_keypad_input )
+except Exception, e:
+    print e
     while (1):
         if ( input != 0 ):
             eventHappened ( input )
