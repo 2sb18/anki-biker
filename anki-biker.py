@@ -211,6 +211,8 @@ getNewCardAndAsk()
 # got this idea for non-blocking keyboard input from Graham King at
 # http://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/
 try:
+   # this assignment will fail if there's no stdin
+   # in which case we'll go to the exception
     old_settings = termios.tcgetattr(sys.stdin)
     tty.setcbreak(sys.stdin.fileno())
     while (1):
@@ -227,10 +229,14 @@ try:
         if membrane_keypad_input != -1:
             eventHappened ( membrane_keypad_input )
 except Exception, e:
+   # this stuff is what runs when anki-biker is being used in normal operation (without keyboard input)
     print e
     while (1):
         if ( input != 0 ):
             eventHappened ( input )
             input = 0
+        membrane_keypad_input = check_membrane_keypad ()
+        if membrane_keypad_input != -1:
+            eventHappened ( membrane_keypad_input )
 finally:
     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
