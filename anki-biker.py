@@ -6,32 +6,43 @@ import select
 import tty
 import termios
 
+switches = 0
+# pull-to-ground switches input
+try:
+    import RPi.GPIO as GPIO
+    switches = 1
+except:
+    print "problems importing"
+    pass
+
 print "filesystemencoding is " + sys.getfilesystemencoding().lower()
 
-# for input to raspberry pi
-# if we aren't using the raspberry (ie we are developing or debugging), this
-# module shouldn't exist
-try:
-    import pifacedigitalio as p
-    p.init()
-    pifacedigital = p.PiFaceDigital()
-    listener = p.InputEventListener(chip=pifacedigital)
-    def print_input(event):
-        global input
-        # print(event.pin_num)
-        mapthing = [3,6,2,5,8,1,4,7]
-        # debounce for 50ms	
-        time.sleep ( 0.05 )
-        if p.digital_read(event.pin_num):
-            input = mapthing[event.pin_num]
-        # eventHappened(mapthing[event.pin_num])
-    for i in range(8):
-        listener.register(i,p.IODIR_FALLING_EDGE, print_input)
-    listener.activate()
-    crap_tts ( "PiFaceDigital detected" )
-except:
-    crap_tts ( "PiFaceDigital not detected" )
-    pass
+# for switches
+pull_to_ground_switches = [ 12, 11, 10, 7, 5, 3 ]
+
+if switches == 1:
+    crap_tts ( "on raspberry pi, using pull-to-ground switches" )
+    GPIO.setmode ( GPIO.BCM )
+    for pin in enumerate(pull_to_ground_switches):
+        GPIO.setup ( pin, GPIO.IN, pull_up_down=GPIO.PUD_UP )
+
+# these are for the membrane keypad
+rows = [ 2, 3, 4 ]
+columns = [ 17, 27, 22 ] 
+keys = [[1, 2, 3], [4,5,6], [7, 8, 9]]
+
+previous_input = -1
+
+def check_pull_to_ground_switches ():
+    global previous_input, pull_to_ground_switches
+    for switch, pin in enumerate(pull_to_ground_switches):
+        if GPIO.input( pin ) == 0:
+            current_input = switch
+    if previous_input != current_input:
+        previous_input = current_input
+        print current_input
+        return current_input
+    return -1
 
 currentCard = 0
 
@@ -121,8 +132,6 @@ def answerQuestion(input):
 # sched.counts(card=None): not sure about this
 
 
-
-
 # right hand answers the questions
 # index go forward (answer 3
 # middle
@@ -135,30 +144,24 @@ def answerQuestion(input):
 
 # (repeat question, repeat answer, sync, suspend
 
-
 def eventHappened(event_input):
-    global state
-    if state == "special_menu":
-        if event_input == 8:
-            crap_tts("exiting special menu")
-            state = "idle"
-        elif event_input == 7:
-            sync()
-    else:
-        if event_input >= 1 and event_input <= 4:
-            answerQuestion(event_input)
+    print event_input
+    try:
+        if int(event_input) >= 1 and int(event_input) <= 4:
+            answerQuestion(int(event_input))
             getNewCardAndAsk()
-        elif event_input == 5:
-            repeatQuestion()
-        elif event_input == 6:
-            repeatAnswer()
-        elif event_input == 7:
-            suspendCard()
-            getNewCardAndAsk()
-        elif event_input == 8:
-            crap_tts("special menu")
-            state = "special_menu"
-
+            return
+    except:
+        pass
+    if event_input == "q":
+        repeatQuestion()
+    elif event_input == 'a':
+        repeatAnswer()
+    elif event_input == 's':
+        suspendCard()
+        getNewCardAndAsk()
+    elif event_input == 'y':
+        sync()
 
 # try syncing on startup
 sync()
@@ -171,26 +174,29 @@ except:
 #get new card and ask it
 getNewCardAndAsk()
 
+old_settings = 0
 
 # got this idea for non-blocking keyboard input from Graham King at
 # http://www.darkcoding.net/software/non-blocking-console-io-is-not-possible/
 try:
+   # this assignment will fail if there's no stdin
+   # in which case we'll go to the exception
     old_settings = termios.tcgetattr(sys.stdin)
     tty.setcbreak(sys.stdin.fileno())
-    while (1):
-        # is there any keyboard input
+except:
+    print "no keyboard"
+
+while (1):
+    # is there any keyboard input
+    if old_settings: 
         if select.select([sys.stdin], [], [], 0) == ([sys.stdin], [], []):
             c = sys.stdin.read(1)
-            if c >= '1' and c <= '8':
-                print c
-                input = int(c)
-        if ( input != 0 ):
-            eventHappened ( input )
-            input = 0
-except:
-    while (1):
-        if ( input != 0 ):
-            eventHappened ( input )
-            input = 0
-finally:
-    termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)
+            if c:
+                eventHappened ( c )
+    elif ( switches == 1 ):
+        switch_input = check_pull_to_ground_switches ()
+        if switch_input != -1:
+            eventHappened ( switch_input )
+        
+# finally:
+#     termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old_settings)

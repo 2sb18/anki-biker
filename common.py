@@ -53,6 +53,8 @@ except ImportError:
 collection_filename = os.path.dirname(os.path.realpath(__file__)) + '/' + config['collection_filename']
 collection = anki.Collection(collection_filename, log=True)
 
+print collection.decks.allNames()
+
 def tts(text):
     global ankitts_file
     print "saying: " + text
@@ -65,10 +67,10 @@ def tts(text):
 def crap_tts(text):
     print "saying this crappily: " + text
     write_to_log("saying this crappily: " + text)
-    try:
-        subprocess.call(['flite', '-t', text])
-    except OSError:
-        sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
+    # try:
+    #     subprocess.call(['flite', '-t', text])
+    # except OSError:
+    #     sys.exit("looks like you need to install flite. run 'sudo apt-get install flite'")
 
 def write_to_log(text):
     # seems like this won't throw an error even if log file does not exist
